@@ -1,13 +1,12 @@
 #pragma config(I2C_Usage, I2C1, i2cSensors)
-#pragma config(Sensor, I2C_1,  leftGrabber,    sensorQuadEncoderOnI2CPort,    , AutoAssign )
+#pragma config(Sensor, I2C_1,  leftGrabber,    sensorNone)
 #pragma config(Sensor, I2C_2,  rightGrabber,   sensorQuadEncoderOnI2CPort,    , AutoAssign )
 #pragma config(Motor,  port1,           frontLeft,     tmotorVex393_HBridge, openLoop, reversed)
 #pragma config(Motor,  port2,           bottomLeft,    tmotorVex393_MC29, openLoop, reversed)
 #pragma config(Motor,  port3,           bottomRight,   tmotorVex393_MC29, openLoop)
-#pragma config(Motor,  port4,           rightGrabber,  tmotorVex393_MC29, openLoop, encoderPort, I2C_2)
+#pragma config(Motor,  port4,           grabber,       tmotorVex393_MC29, openLoop, encoderPort, I2C_2)
 #pragma config(Motor,  port5,           backLeft,      tmotorVex393_MC29, openLoop, reversed)
 #pragma config(Motor,  port6,           frontRight,    tmotorVex393_MC29, openLoop, reversed)
-#pragma config(Motor,  port7,           leftGrabber,   tmotorVex393_MC29, openLoop, reversed, encoderPort, I2C_1)
 #pragma config(Motor,  port8,           topLeft,       tmotorVex393_MC29, openLoop)
 #pragma config(Motor,  port9,           topRight,      tmotorVex393_MC29, openLoop, reversed)
 #pragma config(Motor,  port10,          backRight,     tmotorVex393_HBridge, openLoop, reversed)
@@ -45,10 +44,8 @@ task chassisSlow(){
 	}//while
 };
 
-void closeLeft(void){ motor[leftGrabber] = 127/speedGrabber;}
-void openLeft(void){ motor[leftGrabber] = -127/speedGrabber;}
-void closeRight(void){ motor[rightGrabber] = 127/speedGrabber;}
-void openRight(void){ motor[rightGrabber] = -127/speedGrabber;}
+void closeGrabber(void){ motor[grabber] = 127/speedGrabber;}
+void openGrabber(void){ motor[grabber] = -127/speedGrabber;}
 
 
 //open grabber completely at start, to give the grabber a starting position
@@ -87,64 +84,41 @@ void homeFinger(int mot){
 
 // for grabbers to grab object
 // last test on 11-7 this directly followed homing function and almost desrtoyed robot; needs to be moved so that tests do not destory robot
-void snatch(void){
-	//will not give back any new values
-	int lastRightVal = nMotorEncoder[rightGrabber];
-	//last right grabber motor value is its encoder value
-	int lastLeftVal = nMotorEncoder[leftGrabber];
-	//last left grabber motor value is its encoder value
-	bool stillMoving = true;
-	// turn motor on
-	closeLeft();//motor[leftGrabber] = -127/speedGrabber;
-	//to bring left grabber to cone to grab it
-	closeRight(); //motor[rightGrabber] = -127/speedGrabber;
-	//to bring right grabber to cone to grab it
-	while (stillMoving){
-		// pause for ten milliseconds to let encoder gather information
-		sleep(100);
-		// current left grabber motor value is the new encoder value
-		int curLeftVal = nMotorEncoder[leftGrabber];
-		// current right grabber motor value is the new encoder value
-		int curRightVal = nMotorEncoder[rightGrabber];
-		//"still moving" occurs when:
-		//current left grabber motor value has changed since last check
-		//and current right grabber motor value has changed since last check
-		stillMoving = (curLeftVal != lastLeftVal) && (curRightVal != lastRightVal);
-		//left grabber motor value does not change
-		lastLeftVal=curLeftVal;
-		//right grabber motor value does not change
-		lastRightVal=curRightVal;
-		//function goal acheived, so exit while true loop
-	}
-	// make this measured position as "zero" (to grip stronger on cone)
-	motor[rightGrabber] = -20;
-	motor[leftGrabber] = -20;
-}
-
-//position for grabbers to be ready to grab cones, to drive around the field
-//command is the wanted position
-void fingerToPosn(int command){
-	//sync up motor position with encoder
-	int curPosn=nMotorEncoder[leftGrabber];
-	//when difference of current position and wanted position > 10
-	while( abs(curPosn-command)>10){
-		// motor value is one hundreth the difference of the current position and wanted position
-		int toMotor= (int)(0.02*(curPosn-command));
-		//left grabber position is changed by above program
-		motor[leftGrabber] = toMotor;
-		//right grabber position is changed by above program
-		motor[rightGrabber] = toMotor;
-		//current position is the new encoder value
-		curPosn=nMotorEncoder[leftGrabber];
-		//repeat process until current position is wanted position
-	}//end while loop
-}
+//void snatch(void){
+//	//will not give back any new values
+//	int lastRightVal = nMotorEncoder[rightGrabber];
+//	//last right grabber motor value is its encoder value
+//	int lastLeftVal = nMotorEncoder[leftGrabber];
+//	//last left grabber motor value is its encoder value
+//	bool stillMoving = true;
+//	// turn motor on
+//	closeLeft();//motor[leftGrabber] = -127/speedGrabber;
+//	//to bring left grabber to cone to grab it
+//	closeRight(); //motor[rightGrabber] = -127/speedGrabber;
+//	//to bring right grabber to cone to grab it
+//	while (stillMoving){
+//		// pause for ten milliseconds to let encoder gather information
+//		sleep(100);
+//		// current left grabber motor value is the new encoder value
+//		int curLeftVal = nMotorEncoder[leftGrabber];
+//		// current right grabber motor value is the new encoder value
+//		int curRightVal = nMotorEncoder[rightGrabber];
+//		//"still moving" occurs when:
+//		//current left grabber motor value has changed since last check
+//		//and current right grabber motor value has changed since last check
+//		stillMoving = (curLeftVal != lastLeftVal) && (curRightVal != lastRightVal);
+//		//left grabber motor value does not change
+//		lastLeftVal=curLeftVal;
+//		//right grabber motor value does not change
+//		lastRightVal=curRightVal;
+//		//function goal acheived, so exit while true loop
+//	}
+//	// make this measured position as "zero" (to grip stronger on cone)
+//	motor[grabber] = -20;
+//}
 
 //this function will not send back new numbers
 void joystick(){
-homeFinger(rightGrabber);
-homeFinger(leftGrabber);
-fingerToPosn(-600);
 
 	startTask (chassisSlow); // monitor slow speed buttons
 	//continue forever
@@ -162,48 +136,21 @@ fingerToPosn(-600);
 		motor[topRight] = vexRT[Ch2Xmtr2]/speedGrabber;
 		//grabber motors
 		// up button=close, down button = open
-		// button for left grabber to close on cone
-		//if pressed, left grabber closes
-		if (vexRT[Btn5UXmtr2] &&! vexRT[Btn5DXmtr2]) {
-			closeLeft();
-		};
-		// button for left grabber to open
-		//if pressed, left grabber opens
-		if (vexRT[Btn5DXmtr2] &&! vexRT[Btn5UXmtr2]) {
-			openLeft();
-		};
-		//if neither button is pressed, left grabber does nothing
-		if (!(vexRT[Btn5UXmtr2] || vexRT[Btn5DXmtr2])) {
-			motor[leftGrabber] = 0;
-		};
-		// up button=close, down button = open
 		// button for right grabber to close on cone
 		//if pressed, right grabber closes
 		if (vexRT[Btn6UXmtr2] && !vexRT[Btn6DXmtr2]) {
-			closeRight();
+			closeGrabber();
 		};
 		//button for right grabber to open
 		//if pressed, right grabber opens
 		if (vexRT[Btn6DXmtr2] && !vexRT[Btn6UXmtr2]) {
-			openRight();
+			openGrabber();
 		};
 		//if neither button is pressed, right grabber does nothing
 		if (!(vexRT[Btn6UXmtr2] || vexRT[Btn6DXmtr2])) {
-			motor[rightGrabber] = 0;
+			motor[grabber] = 0;
 		};
-		//if partner button 7 up pressed, grabber positions reset
-		if (vexRT[Btn7UXmtr2]){
-			homeFinger(leftGrabber);
-			homeFinger(rightGrabber);
-		};
-		//if partner button 7 down pressed, grabbers grab cone
-		if (vexRT[Btn7DXmtr2]){
-			snatch();
-		};
-		//if partner button 8 down pressed, grabbers go to driving position
-		if (vexRT[Btn8DXmtr2]){
-			fingerToPosn(-460);
-		};
+
 	}//exit while loop
 }//end taskMain
 
