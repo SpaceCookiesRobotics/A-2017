@@ -44,83 +44,184 @@ task chassisSlow(){
 	}//while
 };
 
-void closeGrabber(void){ motor[grabber] = 127/speedGrabber;}
-void openGrabber(void){ motor[grabber] = -127/speedGrabber;}
+void closeGrabber(void){ motor[grabber] = -127/speedGrabber;}
+void openGrabber(void){ motor[grabber] = 127/speedGrabber;}
 
-
-//open grabber completely at start, to give the grabber a starting position
-void homeFinger(int mot){
-	//last value from the motor is equal to the encoder value
-	float lastVal = nMotorEncoder[mot];
-	int curVal=lastVal+1000; // something different
-//	float runningAverage=lastVal;
-	// still moving function is true
+void grabCone(void){
+	//for grabbers to grab object
+	//will not give back any new values
+	int lastVal = nMotorEncoder[grabber];
+	//last right grabber motor value is its encoder value
 	bool stillMoving = true;
 	// turn motor on
-	motor[mot] = -20;// has to be weak enough for the gears to not skip
-	// forever doing still moving function
+	closeGrabber();//motor[grabber] = 127/speedGrabber;
+	//to bring grabber to cone to grab it
 	while (stillMoving){
 		// pause for ten milliseconds to let encoder gather information
 		sleep(100);
-		// current motor value is the encoder value
-		curVal = nMotorEncoder[mot];
-		//runningAverage = 0.9*curVal + 0.1*runningAverage;
-		// "still moving" is true when current value is not last value
-		//stillMoving = (curVal != lastVal);
-		stillMoving = abs(curVal-lastVal)>2;
-		if(!stillMoving) break;
-
-		//stillMoving = fabs(runningAverage-lastVal)< 2;
-		// stop program when not moving
+		// current left grabber motor value is the new encoder value
+		int curVal = nMotorEncoder[grabber];
+		// current grabber motor value is the new encoder value
+		//"still moving" occurs when:
+		//current left grabber motor value has changed since last check
+		//and current right grabber motor value has changed since last check
+		stillMoving = (curVal != lastVal);
+		//left grabber motor value does not change
 		lastVal=curVal;
-		// exit while true loop
+		//right grabber motor value does not change
+		//function goal acheived, so exit while true loop
 	}
-	// turn motor off
-	motor[mot] = 0;
-	sleep(200);
-		// make this measured position as "zero" (to base off of for next commands)
-	nMotorEncoder[mot] = 0;
+	// make this measured position as "zero" (to grip stronger on cone)
+	motor[grabber] = -20;
+}
+void releaseCone(void){
+	//for grabbers to release object
+	//will not give back any new values
+	int lastVal = nMotorEncoder[grabber];
+	//last right grabber motor value is its encoder value
+	bool stillMoving = true;
+	// turn motor on
+	openGrabber();//motor[grabber] = -127/speedGrabber;
+	//to bring grabber to cone to grab it
+	while (stillMoving){
+		// pause for ten milliseconds to let encoder gather information
+		sleep(100);
+		// current left grabber motor value is the new encoder value
+		int curVal = nMotorEncoder[grabber];
+		// current grabber motor value is the new encoder value
+		//"still moving" occurs when:
+		//current left grabber motor value has changed since last check
+		//and current right grabber motor value has changed since last check
+		stillMoving = (curVal != lastVal);
+		//left grabber motor value does not change
+		lastVal=curVal;
+		//right grabber motor value does not change
+		//function goal acheived, so exit while true loop
+	}
+	// make this measured position as "zero" (to grip stronger on cone)
+	motor[grabber] = -20;
 }
 
-// for grabbers to grab object
-// last test on 11-7 this directly followed homing function and almost desrtoyed robot; needs to be moved so that tests do not destory robot
-//void snatch(void){
-//	//will not give back any new values
-//	int lastRightVal = nMotorEncoder[rightGrabber];
-//	//last right grabber motor value is its encoder value
-//	int lastLeftVal = nMotorEncoder[leftGrabber];
-//	//last left grabber motor value is its encoder value
-//	bool stillMoving = true;
-//	// turn motor on
-//	closeLeft();//motor[leftGrabber] = -127/speedGrabber;
-//	//to bring left grabber to cone to grab it
-//	closeRight(); //motor[rightGrabber] = -127/speedGrabber;
-//	//to bring right grabber to cone to grab it
-//	while (stillMoving){
-//		// pause for ten milliseconds to let encoder gather information
-//		sleep(100);
-//		// current left grabber motor value is the new encoder value
-//		int curLeftVal = nMotorEncoder[leftGrabber];
-//		// current right grabber motor value is the new encoder value
-//		int curRightVal = nMotorEncoder[rightGrabber];
-//		//"still moving" occurs when:
-//		//current left grabber motor value has changed since last check
-//		//and current right grabber motor value has changed since last check
-//		stillMoving = (curLeftVal != lastLeftVal) && (curRightVal != lastRightVal);
-//		//left grabber motor value does not change
-//		lastLeftVal=curLeftVal;
-//		//right grabber motor value does not change
-//		lastRightVal=curRightVal;
-//		//function goal acheived, so exit while true loop
-//	}
-//	// make this measured position as "zero" (to grip stronger on cone)
-//	motor[grabber] = -20;
-//}
+void riseLift(void){
+	//left side up
+	motor[bottomLeft] =	127;
+	motor[topLeft] =	127;
+	//right side up
+	motor[bottomRight] =	127;
+	motor[topRight] =	127;
+	//time it takes for lift to get to the top
+	wait10Msec(35);
+	//left side stop
+	motor[bottomLeft] =	0;
+	motor[topLeft] =	0;
+	//right side stop
+	motor[bottomRight] =	0;
+	motor[topRight] =	0;
+
+}
+void fallLift(void){
+	//left side down
+	motor[bottomLeft] =	-127;
+	motor[topLeft] =	-127;
+	//right side down
+	motor[bottomRight] =	-127;
+	motor[topRight] =	-127;
+	//time it takes for lift to fall to sationary goal
+	wait10Msec(10);
+	//left side stop
+	motor[bottomLeft] =	0;
+	motor[topLeft] =	0;
+	//right side stop
+	motor[bottomRight] =	0;
+	motor[topRight] =	0;
+}
+
+void driveForwards(void) {
+	//left side down
+	motor[backLeft] =	127;
+	motor[frontLeft] =	127;
+	//right side down
+	motor[backRight] =	127;
+	motor[frontRight] =	127;
+	//time it takes for chassis to get to stationary goal
+	wait10Msec(10);
+	//left side stop
+	motor[backLeft] =	0;
+	motor[frontLeft] =	0;
+	//right side stop
+	motor[backRight] =	0;
+	motor[frontRight] =	0;
+}
+void driveBackwards (void){
+	//left side backward
+	motor[backLeft] =	-127;
+	motor[frontLeft] =	-127;
+	//right side backward
+	motor[backRight] =	-127;
+	motor[frontRight] =	-127;
+	//time it takes for chassis to get to stationary goal
+	wait10Msec(10);
+	//left side stop
+	motor[backLeft] =	0;
+	motor[frontLeft] =	0;
+	//right side stop
+	motor[backRight] =	0;
+	motor[frontRight] =	0;
+}
+//closes grabber to get cone, then lifts up lift
+task liftCone (){
+	while (true) {
+		// if partner driver presses button 5 Up, closes grabber to get cone, then lifts up lift
+		if (vexRT[Btn5UXmtr2]==1){
+			grabCone();
+			wait10Msec(50);
+			riseLift ();
+			wait10Msec(50);
+		}//if
+	}//while
+};
+bool active = false;
+int target = 0;
+int curPosition = 0;
+task niceClaw () {
+	int k=2;
+	while (true) {
+		if (active) {
+			int mot = 0;
+			curPosition = nMotorEncoder[mot];
+			int m = k * (target - curPosition);
+			if (m > 127) m = 127;
+			if (m < -127) m = -127;
+			motor [grabber] = m ;
+		}//if
+	}//while
+}//end task niceClaw
+bool claw45 = false;
+task doClaw45 () {
+	while (true) {
+		if (claw45){
+			target = 500;
+			active = true;
+			while (abs(curPosition - target) > 100) {
+				sleep (50); //in milliseconds
+				int tick = 1;
+				tick ++;
+				if (tick > 300) break ;
+			}//end while in if
+			active = false;
+			claw45 = false;
+		}//end if
+	}//end while
+}//end task doClaw45
 
 //this function will not send back new numbers
 void joystick(){
 
-	startTask (chassisSlow); // monitor slow speed buttons
+	startTask(chassisSlow); // monitor slow speed buttons
+	startTask(liftCone); //grabs cone and lifts it up
+	startTask(niceClaw); //sets the the grabber to predetermined position so the jaws don't hit the wheel
+	startTask(doClaw45);//sets the grabber open to about 45 degrees using above task
+
 	//continue forever
 	while(true){
 		displayLCDNumber(1,0,speedDriver);
@@ -134,15 +235,13 @@ void joystick(){
 		motor[bottomRight] = vexRT[Ch2Xmtr2]/speedGrabber;
 		motor[topLeft] = vexRT[Ch2Xmtr2]/speedGrabber;
 		motor[topRight] = vexRT[Ch2Xmtr2]/speedGrabber;
-		//grabber motors
-		// up button=close, down button = open
-		// button for right grabber to close on cone
-		//if pressed, right grabber closes
+		//grabber motor
+		// up button=open, down button = close
+		//button for grabber to close
 		if (vexRT[Btn6UXmtr2] && !vexRT[Btn6DXmtr2]) {
 			closeGrabber();
 		};
-		//button for right grabber to open
-		//if pressed, right grabber opens
+		//button for grabber to open
 		if (vexRT[Btn6DXmtr2] && !vexRT[Btn6UXmtr2]) {
 			openGrabber();
 		};
@@ -150,10 +249,25 @@ void joystick(){
 		if (!(vexRT[Btn6UXmtr2] || vexRT[Btn6DXmtr2])) {
 			motor[grabber] = 0;
 		};
-
+		if (vexRT[Btn8DXmtr2]){
+			claw45 = true;
+		}//end if
 	}//exit while loop
 }//end taskMain
 
-void autonomous() {
 
+void autonomous() {
+	//scoring on stationary goals
+	//grab cone
+	grabCone();
+	//lift up all the way
+	riseLift();
+	//drive forwards
+	driveForwards();
+	//drop down to stationary goal
+	fallLift();
+	//release cone
+	releaseCone();
+	//drive backwards
+	driveBackwards();
 }
