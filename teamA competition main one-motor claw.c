@@ -1,10 +1,9 @@
 #pragma config(I2C_Usage, I2C1, i2cSensors)
-#pragma config(Sensor, I2C_1,  leftGrabber,    sensorNone)
-#pragma config(Sensor, I2C_2,  rightGrabber,   sensorQuadEncoderOnI2CPort,    , AutoAssign )
+#pragma config(Sensor, I2C_1,  rightGrabber,   sensorQuadEncoderOnI2CPort,    , AutoAssign )
 #pragma config(Motor,  port1,           frontLeft,     tmotorVex393_HBridge, openLoop, reversed)
 #pragma config(Motor,  port2,           bottomLeft,    tmotorVex393_MC29, openLoop, reversed)
 #pragma config(Motor,  port3,           bottomRight,   tmotorVex393_MC29, openLoop)
-#pragma config(Motor,  port4,           grabber,       tmotorVex393_MC29, openLoop, encoderPort, I2C_2)
+#pragma config(Motor,  port4,           grabber,       tmotorVex393_MC29, openLoop, encoderPort, I2C_1)
 #pragma config(Motor,  port5,           backLeft,      tmotorVex393_MC29, openLoop, reversed)
 #pragma config(Motor,  port6,           frontRight,    tmotorVex393_MC29, openLoop, reversed)
 #pragma config(Motor,  port8,           topLeft,       tmotorVex393_MC29, openLoop)
@@ -39,7 +38,7 @@ task chassisSlow(){
 			speedGrabber = 1;
 			// otherwise normal grabber and lift speed
 		}
-		displayLCDNumber(0,0,speedDriver);
+		//displayLCDNumber(0,0,speedDriver);
 
 	}//while
 };
@@ -180,42 +179,67 @@ task liftCone (){
 		}//if
 	}//while
 };
-bool active = false;
-int target = 0;
-int curPosition = 0;
+bool active = false; // whether we want the real time control active
+int target = 0; // what encoder value we want the claw to go to
+int curPosition = 0; // where we are now
+// task to do real time control of the claw, if desired
 task niceClaw () {
-	int k=2;
+	float k = 2; // proportional gain.  Bigger = faster response, but possiblly unstable
 	while (true) {
-		if (active) {
-			int mot = 0;
-			curPosition = nMotorEncoder[mot];
-			int m = k * (target - curPosition);
-			if (m > 127) m = 127;
-			if (m < -127) m = -127;
-			motor [grabber] = m ;
+		if (active) { // control only if told to do it
+			clearLCDLine(0); displayLCDString(0,0,"controlling");
+			curPosition = nMotorEncoder(grabber); // where are we now
+			int m = (int)(k * (target - curPosition)); // compute new control value
+			if (m > 127) m = 127; // limit to max motor value
+				if (m < -127) m = -127; // limit to min motor value
+				clearLCDLine(1); displayLCDNumber(1,8,m);
+			displayLCDNumber(1,0,curPosition);
+			motor [grabber] = m ;// send control to motor
 		}//if
 	}//while
 }//end task niceClaw
-bool claw45 = false;
+
+bool claw45 = false; // button press makes this true; tells doClaw45 to start
 task doClaw45 () {
 	while (true) {
-		if (claw45){
-			target = 500;
-			active = true;
-			while (abs(curPosition - target) > 100) {
-				sleep (50); //in milliseconds
-				int tick = 1;
+		if (claw45){ // if button was pressed
+			clearLCDLine(0); displayLCDString(0,0,"doClaw45");
+			target = -70; // encoder value for claws at 45 deg
+			active = true; // tell niceClaw to control it
+			curPosition = nMotorEncoder(grabber);
+			int tick = 0;
+			int error = curPosition-target;
+			bool notThere = true;
+			int countsThere = 0;
+      bool timedOut=false;
+			while(notThere){
+				// want to be in position for several counts
+				if(abs(error)<10){
+					countsThere++;
+				}//if
+				else {countsThere = 0;}
+				if(countsThere>5){notThere = false;}//we've arrived for 50 milliseconds
+				error = curPosition-target;
 				tick ++;
-				if (tick > 300) break ;
-			}//end while in if
-			active = false;
-			claw45 = false;
+				if (tick > 4*20){
+					timedOut=true;
+					break ; // timeout after 4 seconds
+				}
+				sleep(10);
+			}//while
+
+			clearLCDLine(0);
+			if(timedOut) displayLCDString(0,0,"timeout");
+			else displayLCDString(0,0,"arrived");
+			active = false; // tell niceClaw to stop controlling
+			claw45 = false;  // reset "button was pressed" indicator
 		}//end if
 	}//end while
 }//end task doClaw45
 
 //this function will not send back new numbers
 void joystick(){
+	displayLCDString(0,0,"start");
 
 	startTask(chassisSlow); // monitor slow speed buttons
 	startTask(liftCone); //grabs cone and lifts it up
@@ -224,7 +248,7 @@ void joystick(){
 
 	//continue forever
 	while(true){
-		displayLCDNumber(1,0,speedDriver);
+		//displayLCDNumber(1,0,speedDriver);
 		//chassis motors
 		motor[frontLeft] = vexRT[Ch3]/speedDriver;
 		motor[backLeft] = vexRT[Ch3]/speedDriver;
@@ -249,7 +273,8 @@ void joystick(){
 		if (!(vexRT[Btn6UXmtr2] || vexRT[Btn6DXmtr2])) {
 			motor[grabber] = 0;
 		};
-		if (vexRT[Btn8DXmtr2]){
+		if (vexRT[Btn8DXmtr2]){ // partner button 8 down = move claw to 45
+			clearLCDLine(0); displayLCDString(0,0,"btn 8D");
 			claw45 = true;
 		}//end if
 	}//exit while loop
@@ -257,6 +282,8 @@ void joystick(){
 
 
 void autonomous() {
+	displayLCDString(0,0,"a-mouse");
+
 	//scoring on stationary goals
 	//grab cone
 	grabCone();
