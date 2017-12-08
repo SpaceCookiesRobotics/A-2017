@@ -31,7 +31,7 @@ task chassisSlow(){
 		}
 		// if partner presses button 8 up, grabber and lift go at half speed
 		if (vexRT[Btn8UXmtr2]==1){
-			speedGrabber = 2;
+			speedGrabber = 3;
 			// grabber and lift speed to half
 		}
 		else{
@@ -101,33 +101,33 @@ void releaseCone(void){
 	motor[grabber] = -20;
 }
 
+// for autonomous
 void riseLift(void){
 	//left side up
-	motor[bottomLeft] =	127;
-	motor[topLeft] =	127;
+	motor[bottomLeft] =	127/speedGrabber;
+	motor[topLeft] =	127/speedGrabber;
 	//right side up
-	motor[bottomRight] =	127;
-	motor[topRight] =	127;
+	motor[bottomRight] =	127/speedGrabber;
+	motor[topRight] =	127/speedGrabber;
 	//time it takes for lift to get to the top
-	wait10Msec(35);
+	wait10Msec(400); //35
 	//left side stop
 	motor[bottomLeft] =	0;
 	motor[topLeft] =	0;
 	//right side stop
 	motor[bottomRight] =	0;
 	motor[topRight] =	0;
-
 }
-void fallLift(void){
-	//left side down
-	motor[bottomLeft] =	-127;
-	motor[topLeft] =	-127;
+void sendLiftDown(void){
+		//left side down
+	motor[bottomLeft] =	-127/speedGrabber;
+	motor[topLeft] =	-127/speedGrabber;
 	//right side down
-	motor[bottomRight] =	-127;
-	motor[topRight] =	-127;
-	//time it takes for lift to fall to sationary goal
-	wait10Msec(10);
-	//left side stop
+	motor[bottomRight] =	-127/speedGrabber;
+	motor[topRight] =	-127/speedGrabber;
+}
+void stopLift(void){
+		//left side stop
 	motor[bottomLeft] =	0;
 	motor[topLeft] =	0;
 	//right side stop
@@ -135,15 +135,21 @@ void fallLift(void){
 	motor[topRight] =	0;
 }
 
-void driveForwards(void) {
+void fallLift(void){
+  sendLiftDown();
+	//time it takes for lift to fall to sationary goal
+	wait10Msec(200); //10
+  stopLift();
+}
+void startForwards(void) {
 	//left side down
 	motor[backLeft] =	127;
 	motor[frontLeft] =	127;
 	//right side down
 	motor[backRight] =	127;
 	motor[frontRight] =	127;
-	//time it takes for chassis to get to stationary goal
-	wait10Msec(10);
+}
+void stopDriving(void){
 	//left side stop
 	motor[backLeft] =	0;
 	motor[frontLeft] =	0;
@@ -151,7 +157,14 @@ void driveForwards(void) {
 	motor[backRight] =	0;
 	motor[frontRight] =	0;
 }
-void driveBackwards (void){
+
+void driveForwards(int time) {
+  startForwards();
+	//time it takes for chassis to get to stationary goal
+	wait10Msec(time);
+  stopDriving();
+}
+void driveBackwards (int time){
 	//left side backward
 	motor[backLeft] =	-127;
 	motor[frontLeft] =	-127;
@@ -159,13 +172,30 @@ void driveBackwards (void){
 	motor[backRight] =	-127;
 	motor[frontRight] =	-127;
 	//time it takes for chassis to get to stationary goal
-	wait10Msec(10);
-	//left side stop
-	motor[backLeft] =	0;
-	motor[frontLeft] =	0;
-	//right side stop
-	motor[backRight] =	0;
-	motor[frontRight] =	0;
+	wait10Msec(time);
+  stopDriving();
+}
+void turnLeft (int time){
+	//left side backward
+	motor[backLeft] =	-127;
+	motor[frontLeft] =	-127;
+	//right side forward
+	motor[backRight] =	127;
+	motor[frontRight] =	127;
+	//time it takes for chassis to get to stationary goal
+	wait10Msec(time);
+  stopDriving();
+}
+void turnRight (int time){
+	//left side forward
+	motor[backLeft] =	127;
+	motor[frontLeft] =	127;
+	//right side backward
+	motor[backRight] =	-127;
+	motor[frontRight] =	-127;
+	//time it takes for chassis to get to stationary goal
+	wait10Msec(time);
+  stopDriving();
 }
 //closes grabber to get cone, then lifts up lift
 task liftCone (){
@@ -184,19 +214,30 @@ int target = 0; // what encoder value we want the claw to go to
 int curPosition = 0; // where we are now
 // task to do real time control of the claw, if desired
 task niceClaw () {
-	float k = 2; // proportional gain.  Bigger = faster response, but possiblly unstable
+	float kp = 0.4; //0.5 proportional gain.  Bigger = faster response, but possiblly unstable
+	float ki = 0.01; // integral gain. cleans up steady state error at end
+	float kd = 0.5; // derivative gain, to damp out the oscillations
+	int errorSum=0;
+	int errorChange=0;
+	int oldError=0;
 	while (true) {
 		if (active) { // control only if told to do it
 			clearLCDLine(0); displayLCDString(0,0,"controlling");
 			curPosition = nMotorEncoder(grabber); // where are we now
-			int m = (int)(k * (target - curPosition)); // compute new control value
+			int errorPos= curPosition-target; // current position errors
+			errorSum += errorPos; // build up a sum of error, for integral gain
+			errorChange = errorPos-oldError; // estimate rate of change of error
+			oldError=errorPos; // save for next time thru
+			// compute new control value
+			int m = (int)(-kp * errorPos - ki*errorSum - kd*errorChange);
 			if (m > 127) m = 127; // limit to max motor value
-				if (m < -127) m = -127; // limit to min motor value
-				clearLCDLine(1); displayLCDNumber(1,8,m);
+			if (m < -127) m = -127; // limit to min motor value
+			clearLCDLine(1); displayLCDNumber(1,8,m);
 			displayLCDNumber(1,0,curPosition);
 			motor [grabber] = m ;// send control to motor
+			sleep(10);
 		}//if
-	}//while
+	}//whiles
 }//end task niceClaw
 
 bool claw45 = false; // button press makes this true; tells doClaw45 to start
@@ -204,7 +245,7 @@ task doClaw45 () {
 	while (true) {
 		if (claw45){ // if button was pressed
 			clearLCDLine(0); displayLCDString(0,0,"doClaw45");
-			target = -70; // encoder value for claws at 45 deg
+			target = -110; // encoder value for claws at 45 deg
 			active = true; // tell niceClaw to control it
 			curPosition = nMotorEncoder(grabber);
 			int tick = 0;
@@ -212,6 +253,7 @@ task doClaw45 () {
 			bool notThere = true;
 			int countsThere = 0;
       bool timedOut=false;
+      int sleepMS=10;
 			while(notThere){
 				// want to be in position for several counts
 				if(abs(error)<10){
@@ -221,11 +263,11 @@ task doClaw45 () {
 				if(countsThere>5){notThere = false;}//we've arrived for 50 milliseconds
 				error = curPosition-target;
 				tick ++;
-				if (tick > 4*20){
+				if (tick > (4*1000)/sleepMS){
 					timedOut=true;
 					break ; // timeout after 4 seconds
 				}
-				sleep(10);
+				sleep(sleepMS);
 			}//while
 
 			clearLCDLine(0);
@@ -270,7 +312,8 @@ void joystick(){
 			openGrabber();
 		};
 		//if neither button is pressed, right grabber does nothing
-		if (!(vexRT[Btn6UXmtr2] || vexRT[Btn6DXmtr2])) {
+		if (!claw45 && // not otherwise trying to control the claw
+			!(vexRT[Btn6UXmtr2] || vexRT[Btn6DXmtr2])) {
 			motor[grabber] = 0;
 		};
 		if (vexRT[Btn8DXmtr2]){ // partner button 8 down = move claw to 45
@@ -280,21 +323,54 @@ void joystick(){
 	}//exit while loop
 }//end taskMain
 
+void scoreLeftCone() {
+//drive backward or forward??
+ driveForwards(50);
+//drive lift down
+ fallLift();
+//turn left
+turnLeft(100);
 
-void autonomous() {
-	displayLCDString(0,0,"a-mouse");
-
+//move forward
+ driveForwards(50);
+//grab cone
+	grabCone();
+	//lift up all the way
+	riseLift();
+//turn right
+	turnRight(70);
+//move forward
+	driveForwards(50);
+//drop down to stationary goal
+	fallLift();
+	//release cone
+	releaseCone();
+	//drive backwards
+	driveBackwards(100);
+}
+void scorePresetCone(){
 	//scoring on stationary goals
+  claw45 = true; // will make claw at nice angle
+  wait10Msec(50); //wait for claw to move
+	//driving lift down
+	sendLiftDown();  wait10Msec(50);
 	//grab cone
 	grabCone();
 	//lift up all the way
 	riseLift();
 	//drive forwards
-	driveForwards();
+	driveForwards(100);//10
 	//drop down to stationary goal
 	fallLift();
 	//release cone
 	releaseCone();
 	//drive backwards
-	driveBackwards();
+	driveBackwards(100);
+}
+
+void autonomous() {
+	displayLCDString(0,0,"a-mouse");
+  scorePresetCone();
+
+	//scoreLeftCone();
 }
