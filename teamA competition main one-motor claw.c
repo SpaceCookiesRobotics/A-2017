@@ -285,7 +285,7 @@ void joystick(){
 		//displayLCDNumber(1,0,speedDriver);
 		//chassis motors
 		isTipping= (SensorValue[dgtl2]==0);
-		if (isTipping){
+		if (isTipping & ! vexRT[Btn6U]){
 			// run back wheels backwards to prevent the robot from tipping
 			motor[backLeft] = -127;
 			motor[backRight] = -127;
