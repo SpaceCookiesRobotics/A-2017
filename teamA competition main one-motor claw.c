@@ -6,7 +6,7 @@
 #pragma config(Motor,  port1,           frontLeft,     tmotorVex393_HBridge, openLoop, reversed)
 #pragma config(Motor,  port2,           bottomLeft,    tmotorVex393_MC29, openLoop, reversed)
 #pragma config(Motor,  port3,           bottomRight,   tmotorVex393_MC29, openLoop)
-#pragma config(Motor,  port4,           grabber,       tmotorVex393_MC29, openLoop, encoderPort, I2C_1)
+#pragma config(Motor,  port4,           grabber,       tmotorVex393_MC29, openLoop, reversed, encoderPort, I2C_1)
 #pragma config(Motor,  port5,           backLeft,      tmotorVex393_MC29, openLoop, reversed)
 #pragma config(Motor,  port6,           frontRight,    tmotorVex393_MC29, openLoop, reversed)
 #pragma config(Motor,  port8,           topLeft,       tmotorVex393_MC29, openLoop)
@@ -46,8 +46,8 @@ task chassisSlow(){
 	}//while
 };
 
-void closeGrabber(void){ motor[grabber] = -127/speedGrabber;}
-void openGrabber(void){ motor[grabber] = 127/speedGrabber;}
+void closeGrabber(void){ motor[grabber] = 127/speedGrabber;}
+void openGrabber(void){ motor[grabber] = -127/speedGrabber;}
 
 void grabCone(void){
 	//for grabbers to grab object
@@ -61,26 +61,20 @@ void grabCone(void){
 	while (stillMoving){
 		// pause for ten milliseconds to let encoder gather information
 		sleep(100);
-		// current left grabber motor value is the new encoder value
-		int curVal = nMotorEncoder[grabber];
 		// current grabber motor value is the new encoder value
+		int curVal = nMotorEncoder[grabber];
 		//"still moving" occurs when:
-		//current left grabber motor value has changed since last check
-		//and current right grabber motor value has changed since last check
+		//current grabber motor value has changed since last check
 		stillMoving = (curVal != lastVal);
-		//left grabber motor value does not change
-		lastVal=curVal;
-		//right grabber motor value does not change
-		//function goal acheived, so exit while true loop
-	}
-	// make this measured position as "zero" (to grip stronger on cone)
-	motor[grabber] = -20;
-}
+		//checking for latest  motor value
+		lastVal = curVal;
+	}//function goal acheived, so exit while true loop
+}//end grabCone
 void releaseCone(void){
 	//for grabbers to release object
 	//will not give back any new values
 	int lastVal = nMotorEncoder[grabber];
-	//last right grabber motor value is its encoder value
+	//last grabber motor value is its encoder value
 	bool stillMoving = true;
 	// turn motor on
 	openGrabber();//motor[grabber] = -127/speedGrabber;
@@ -88,21 +82,15 @@ void releaseCone(void){
 	while (stillMoving){
 		// pause for ten milliseconds to let encoder gather information
 		sleep(100);
-		// current left grabber motor value is the new encoder value
-		int curVal = nMotorEncoder[grabber];
 		// current grabber motor value is the new encoder value
+		int curVal = nMotorEncoder[grabber];
 		//"still moving" occurs when:
-		//current left grabber motor value has changed since last check
-		//and current right grabber motor value has changed since last check
+		//current grabber motor value has changed since last check
 		stillMoving = (curVal != lastVal);
-		//left grabber motor value does not change
+		//checking for latest motor value
 		lastVal=curVal;
-		//right grabber motor value does not change
-		//function goal acheived, so exit while true loop
-	}
-	// make this measured position as "zero" (to grip stronger on cone)
-	motor[grabber] = -20;
-}
+	}	//function goal acheived, so exit while true loop
+}//end
 
 // for autonomous
 void riseLift(void){
@@ -134,7 +122,7 @@ void stopLift(void){
 	motor[bottomLeft] =	0;
 	motor[topLeft] =	0;
 	//right side stop
-	motor[bottomRight] =	0;
+	motor[bottomRight] = 0;
 	motor[topRight] =	0;
 }
 
@@ -309,18 +297,19 @@ void joystick(){
 		motor[frontLeft] = vexRT[Ch3]/speedDriver;
 		motor[frontRight] = vexRT[Ch2]/speedDriver;
 
-
 		//lift motors
+		//with slow speed function on 8U
 		motor[bottomLeft] = vexRT[Ch2Xmtr2]/speedGrabber;
 		motor[bottomRight] = vexRT[Ch2Xmtr2]/speedGrabber;
 		motor[topLeft] = vexRT[Ch2Xmtr2]/speedGrabber;
 		motor[topRight] = vexRT[Ch2Xmtr2]/speedGrabber;
+
 		//grabber motor
 		// up button=open, down button = close
 		//button for grabber to close
 		if (vexRT[Btn6UXmtr2] && !vexRT[Btn6DXmtr2]) {
 			closeGrabber();
-		};
+		};//end if
 		//button for grabber to open
 		if (vexRT[Btn6DXmtr2] && !vexRT[Btn6UXmtr2]) {
 			openGrabber();
@@ -329,11 +318,11 @@ void joystick(){
 		if (!claw45 && // not otherwise trying to control the claw
 			!(vexRT[Btn6UXmtr2] || vexRT[Btn6DXmtr2])) {
 			motor[grabber] = 0;
-		};
+		};//end if
 		if (vexRT[Btn8DXmtr2]){ // partner button 8 down = move claw to 45
 			clearLCDLine(0); displayLCDString(0,0,"btn 8D");
 			claw45 = true;
-		}//end if
+		};//end if
 	}//exit while loop
 }//end taskMain
 
