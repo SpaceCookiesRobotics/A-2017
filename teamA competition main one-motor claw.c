@@ -1,4 +1,7 @@
 #pragma config(I2C_Usage, I2C1, i2cSensors)
+#pragma config(Sensor, dgtl2,  tip,            sensorTouch)
+#pragma config(Sensor, dgtl11, ,               sensorDigitalOut)
+#pragma config(Sensor, dgtl12, ,               sensorDigitalOut)
 #pragma config(Sensor, I2C_1,  rightGrabber,   sensorQuadEncoderOnI2CPort,    , AutoAssign )
 #pragma config(Motor,  port1,           frontLeft,     tmotorVex393_HBridge, openLoop, reversed)
 #pragma config(Motor,  port2,           bottomLeft,    tmotorVex393_MC29, openLoop, reversed)
@@ -119,7 +122,7 @@ void riseLift(void){
 	motor[topRight] =	0;
 }
 void sendLiftDown(void){
-		//left side down
+	//left side down
 	motor[bottomLeft] =	-127/speedGrabber;
 	motor[topLeft] =	-127/speedGrabber;
 	//right side down
@@ -127,7 +130,7 @@ void sendLiftDown(void){
 	motor[topRight] =	-127/speedGrabber;
 }
 void stopLift(void){
-		//left side stop
+	//left side stop
 	motor[bottomLeft] =	0;
 	motor[topLeft] =	0;
 	//right side stop
@@ -136,10 +139,10 @@ void stopLift(void){
 }
 
 void fallLift(void){
-  sendLiftDown();
+	sendLiftDown();
 	//time it takes for lift to fall to sationary goal
 	wait10Msec(200); //10
-  stopLift();
+	stopLift();
 }
 void startForwards(void) {
 	//left side down
@@ -159,10 +162,10 @@ void stopDriving(void){
 }
 
 void driveForwards(int time) {
-  startForwards();
+	startForwards();
 	//time it takes for chassis to get to stationary goal
 	wait10Msec(time);
-  stopDriving();
+	stopDriving();
 }
 void driveBackwards (int time){
 	//left side backward
@@ -173,7 +176,7 @@ void driveBackwards (int time){
 	motor[frontRight] =	-127;
 	//time it takes for chassis to get to stationary goal
 	wait10Msec(time);
-  stopDriving();
+	stopDriving();
 }
 void turnLeft (int time){
 	//left side backward
@@ -184,7 +187,7 @@ void turnLeft (int time){
 	motor[frontRight] =	127;
 	//time it takes for chassis to get to stationary goal
 	wait10Msec(time);
-  stopDriving();
+	stopDriving();
 }
 void turnRight (int time){
 	//left side forward
@@ -195,7 +198,7 @@ void turnRight (int time){
 	motor[frontRight] =	-127;
 	//time it takes for chassis to get to stationary goal
 	wait10Msec(time);
-  stopDriving();
+	stopDriving();
 }
 //closes grabber to get cone, then lifts up lift
 task liftCone (){
@@ -231,8 +234,8 @@ task niceClaw () {
 			// compute new control value
 			int m = (int)(-kp * errorPos - ki*errorSum - kd*errorChange);
 			if (m > 127) m = 127; // limit to max motor value
-			if (m < -127) m = -127; // limit to min motor value
-			clearLCDLine(1); displayLCDNumber(1,8,m);
+				if (m < -127) m = -127; // limit to min motor value
+				clearLCDLine(1); displayLCDNumber(1,8,m);
 			displayLCDNumber(1,0,curPosition);
 			motor [grabber] = m ;// send control to motor
 			sleep(10);
@@ -252,8 +255,8 @@ task doClaw45 () {
 			int error = curPosition-target;
 			bool notThere = true;
 			int countsThere = 0;
-      bool timedOut=false;
-      int sleepMS=10;
+			bool timedOut=false;
+			int sleepMS=10;
 			while(notThere){
 				// want to be in position for several counts
 				if(abs(error)<10){
@@ -280,6 +283,7 @@ task doClaw45 () {
 }//end task doClaw45
 
 //this function will not send back new numbers
+bool isTipping=false;
 void joystick(){
 	displayLCDString(0,0,"start");
 
@@ -292,10 +296,20 @@ void joystick(){
 	while(true){
 		//displayLCDNumber(1,0,speedDriver);
 		//chassis motors
+		isTipping= (SensorValue[dgtl2]==0);
+		if (isTipping){
+			// run back wheels backwards to prevent the robot from tipping
+			motor[backLeft] = -127;
+			motor[backRight] = -127;
+		}
+		else {
+			motor[backLeft] = vexRT[Ch3]/speedDriver;
+			motor[backRight] = vexRT[Ch2]/speedDriver;
+		}
 		motor[frontLeft] = vexRT[Ch3]/speedDriver;
-		motor[backLeft] = vexRT[Ch3]/speedDriver;
 		motor[frontRight] = vexRT[Ch2]/speedDriver;
-		motor[backRight] = vexRT[Ch2]/speedDriver;
+
+
 		//lift motors
 		motor[bottomLeft] = vexRT[Ch2Xmtr2]/speedGrabber;
 		motor[bottomRight] = vexRT[Ch2Xmtr2]/speedGrabber;
@@ -324,24 +338,24 @@ void joystick(){
 }//end taskMain
 
 void scoreLeftCone() {
-//drive backward or forward??
- driveForwards(50);
-//drive lift down
- fallLift();
-//turn left
-turnLeft(100);
+	//drive backward or forward??
+	driveForwards(50);
+	//drive lift down
+	fallLift();
+	//turn left
+	turnLeft(100);
 
-//move forward
- driveForwards(50);
-//grab cone
+	//move forward
+	driveForwards(50);
+	//grab cone
 	grabCone();
 	//lift up all the way
 	riseLift();
-//turn right
+	//turn right
 	turnRight(70);
-//move forward
+	//move forward
 	driveForwards(50);
-//drop down to stationary goal
+	//drop down to stationary goal
 	fallLift();
 	//release cone
 	releaseCone();
@@ -350,8 +364,8 @@ turnLeft(100);
 }
 void scorePresetCone(){
 	//scoring on stationary goals
-  claw45 = true; // will make claw at nice angle
-  wait10Msec(50); //wait for claw to move
+	claw45 = true; // will make claw at nice angle
+	wait10Msec(50); //wait for claw to move
 	//driving lift down
 	sendLiftDown();  wait10Msec(50);
 	//grab cone
@@ -370,7 +384,7 @@ void scorePresetCone(){
 
 void autonomous() {
 	displayLCDString(0,0,"a-mouse");
-  scorePresetCone();
+	scorePresetCone();
 
 	//scoreLeftCone();
 }
