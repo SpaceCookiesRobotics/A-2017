@@ -1,5 +1,7 @@
 #pragma config(I2C_Usage, I2C1, i2cSensors)
 #pragma config(Sensor, dgtl2,  tip,            sensorTouch)
+#pragma config(Sensor, dgtl9,  jumper,         sensorDigitalIn)
+#pragma config(Sensor, dgtl10, led,            sensorDigitalOut)
 #pragma config(Sensor, dgtl11, ,               sensorDigitalOut)
 #pragma config(Sensor, dgtl12, ,               sensorDigitalOut)
 #pragma config(Sensor, I2C_1,  rightGrabber,   sensorQuadEncoderOnI2CPort,    , AutoAssign )
@@ -118,11 +120,11 @@ void riseLift(void){
 }
 void sendLiftDown(void){
 	//left side down
-	motor[bottomLeft] =	-127/speedGrabber;
-	motor[topLeft] =	-127/speedGrabber;
+	motor[bottomLeft] =	-127;
+	motor[topLeft] =	-127;
 	//right side down
-	motor[bottomRight] =	-127/speedGrabber;
-	motor[topRight] =	-127/speedGrabber;
+	motor[bottomRight] =	-127;
+	motor[topRight] =	-127;
 }
 void stopLift(void){
 	//left side stop
@@ -136,7 +138,7 @@ void stopLift(void){
 void fallLift(void){
 	sendLiftDown();
 	//time it takes for lift to fall to sationary goal
-	wait10Msec(200); //10
+	wait10Msec(1000); //10
 	stopLift();
 }
 void startForwards(void) {
@@ -173,24 +175,24 @@ void driveBackwards (int time){
 	wait10Msec(time);
 	stopDriving();
 }
-void turnLeft (int time){
+void turnLeft (int time, int speed=127){
 	//left side backward
-	motor[backLeft] =	-127;
-	motor[frontLeft] =	-127;
+	motor[backLeft] =	-speed;
+	motor[frontLeft] =	-speed;
 	//right side forward
-	motor[backRight] =	127;
-	motor[frontRight] =	127;
+	motor[backRight] =	speed;
+	motor[frontRight] =	speed;
 	//time it takes for chassis to get to stationary goal
 	wait10Msec(time);
 	stopDriving();
 }
-void turnRight (int time){
+void turnRight (int time, int speed=127){
 	//left side forward
-	motor[backLeft] =	127;
-	motor[frontLeft] =	127;
+	motor[backLeft] =	speed;
+	motor[frontLeft] =	speed;
 	//right side backward
-	motor[backRight] =	-127;
-	motor[frontRight] =	-127;
+	motor[backRight] =	-speed;
+	motor[frontRight] =	-speed;
 	//time it takes for chassis to get to stationary goal
 	wait10Msec(time);
 	stopDriving();
@@ -293,16 +295,16 @@ void joystick(){
 	while(true){
 		//displayLCDNumber(1,0,speedDriver);
 		//chassis motors
-		//isTipping= (SensorValue[dgtl2]==0);
-		//if (isTipping & ! vexRT[Btn6U]){
-		//	// run back wheels backwards to prevent the robot from tipping
-		//	motor[backLeft] = -127;
-		//	motor[backRight] = -127;
-		//}
-		//else {
-		//	motor[backLeft] = vexRT[Ch3]/speedDriver;
-		//	motor[backRight] = vexRT[Ch2]/speedDriver;
-		//}
+		bool isTipping = (SensorValue[dgtl2]==0);
+		if (isTipping & ! vexRT[Btn6U]){
+			// run back wheels backwards to prevent the robot from tipping
+			motor[backLeft] = -127;
+			motor[backRight] = -127;
+		}
+		else {
+			motor[backLeft] = vexRT[Ch3]/speedDriver;
+			motor[backRight] = vexRT[Ch2]/speedDriver;
+		}
 		motor[frontLeft] = vexRT[Ch3]/speedDriver;
 		motor[frontRight] = vexRT[Ch2]/speedDriver;
 		motor[backLeft] = vexRT[Ch3]/speedDriver;
@@ -347,24 +349,42 @@ void joystick(){
 	}//exit while loop
 }//end taskMain
 
-void scoreLeftCone() {
-	//drive backward or forward??
+void scoreLeftCone(bool switchAuton) {
+	//drive forward
 	driveForwards(50);
 	//drive lift down
 	fallLift();
 	//turn left
-	turnLeft(100);
-
+	if(switchAuton){
+		turnRight(70);
+		}else{
+		turnLeft(70);
+	}
 	//move forward
-	driveForwards(50);
+	driveForwards(60);
 	//grab cone
 	closeGrabber(); //grabCone();
 	//lift up all the way
 	riseLift();
 	//turn right
-	turnRight(70);
+		if(switchAuton) {
+		turnLeft(109,100);
+		}else{
+		turnRight(109,100);
+	}
+
+
+	//left side forward
+//	motor[backLeft] =	100;
+//	motor[frontLeft] =	100;
+	//right side backward
+//	motor[backRight] =	-100;
+//	motor[frontRight] =	-100;
+	//time it takes for chassis to get to stationary goal
+//	wait10Msec(109);
+//	stopDriving();
 	//move forward
-	driveForwards(50);
+	driveForwards(65);
 	//drop down to stationary goal
 	fallLift();
 	//release cone
@@ -396,8 +416,20 @@ void scorePresetCone(){
 }
 
 void autonomous() {
+	//
+
+	//while(true){
+
+	//switching autonomous
+	bool switchAuton = (SensorValue[dgtl9]==1); //when jumper is in digital port 9
+	// turn led on so you know you got the jumper in right
+	SensorValue[dgtl10]=SensorValue[dgtl9];
+
+
+
 	//driveForwards (75); //to drive out of the way of our alliances autonomous
 	//	displayLCDString(0,0,"a-mouse");
 	scorePresetCone();
-	//scoreLeftCone();
+   wait10Msec(109);
+	scoreLeftCone(switchAuton);
 }
