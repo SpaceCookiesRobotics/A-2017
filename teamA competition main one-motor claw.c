@@ -52,57 +52,9 @@ task chassisSlow(){
 void closeGrabber(void){ motor[grabber] = -127;}
 void openGrabber(void){ motor[grabber] = 127;}
 void relaxGrabber(void){ motor[grabber] = 0;}
-//void grabCone(void){ closeGrabber();}
-/* eliminate all encoder stuff
-void grabCone(void){
-//for grabbers to grab object
-//will not give back any new values
-int lastVal = nMotorEncoder[grabber];
-//last right grabber motor value is its encoder value
-bool stillMoving = true;
-// turn motor on
-closeGrabber();//motor[grabber] = 127/speedGrabber;
-//to bring grabber to cone to grab it
-while (stillMoving){
-// pause for ten milliseconds to let encoder gather information
-sleep(100);
-// current grabber motor value is the new encoder value
-int curVal = nMotorEncoder[grabber];
-//"still moving" occurs when:
-//current grabber motor value has changed since last check
-stillMoving = (curVal != lastVal);
-//checking for latest  motor value
-lastVal = curVal;
-}//function goal acheived, so exit while true loop
-}//end grabCone
-*/
-//void releaseCone(void){ openGrabber();}
-/* eliminate all encoder stuff
-void releaseCone(void){
-//for grabbers to release object
-//will not give back any new values
-int lastVal = nMotorEncoder[grabber];
-//last grabber motor value is its encoder value
-bool stillMoving = true;
-// turn motor on
-openGrabber();//motor[grabber] = -127/speedGrabber;
-//to bring grabber to cone to grab it
-while (stillMoving){
-// pause for ten milliseconds to let encoder gather information
-sleep(100);
-// current   motor value is the new encoder value
-int curVal = nMotorEncoder[grabber];
-//"still moving" occurs when:
-//current grabber motor value has changed since last check
-stillMoving = (curVal != lastVal);
-//checking for latest motor value
-lastVal=curVal;
-}	//function goal acheived, so exit while true loop
-}//end
-*/
 
-//autonomous
-void riseLift(void){
+//for autonomous
+void riseLift(int time){
 	//left side up
 	motor[bottomLeft] =	127;
 	motor[topLeft] =	127;
@@ -110,36 +62,29 @@ void riseLift(void){
 	motor[bottomRight] =	127;
 	motor[topRight] =	127;
 	//time it takes for lift to get to the top
-	wait10Msec(400); //35
+	wait10Msec(time);
 	//left side stop
 	motor[bottomLeft] =	0;
 	motor[topLeft] =	0;
-	//right side stop
+	//right side time
 	motor[bottomRight] =	0;
 	motor[topRight] =	0;
 }
-void sendLiftDown(void){
+void fallLift(int time){
 	//left side down
 	motor[bottomLeft] =	-127;
 	motor[topLeft] =	-127;
 	//right side down
 	motor[bottomRight] =	-127;
 	motor[topRight] =	-127;
-}
-void stopLift(void){
-	//left side stop
+	//time it takes for lift to fall to sationary goal
+	wait10Msec(time);
+		//left side stop
 	motor[bottomLeft] =	0;
 	motor[topLeft] =	0;
 	//right side stop
 	motor[bottomRight] = 0;
 	motor[topRight] =	0;
-}
-
-void fallLift(void){
-	sendLiftDown();
-	//time it takes for lift to fall to sationary goal
-	wait10Msec(1000); //10
-	stopLift();
 }
 void startForwards(void) {
 	//left side down
@@ -197,100 +142,12 @@ void turnRight (int time, int speed=127){
 	wait10Msec(time);
 	stopDriving();
 }
-//closes grabber to get cone, then lifts up lift
-task liftCone (){
-	while (true) {
-		// if partner driver presses button 5 Up, closes grabber to get cone, then lifts up lift
-		if (vexRT[Btn5UXmtr2]==1){
-			closeGrabber(); //grabCone();
-			wait10Msec(50);
-			riseLift ();
-			wait10Msec(50);
-		}//if
-	}//while
-};
 
-/* comment out all encoder stuff
-bool active = false; // whether we want the real time control active
-int target = 0; // what encoder value we want the claw to go to
-int curPosition = 0; // where we are now
-// task to do real time control of the claw, if desired
-task niceClaw () {
-float kp = 0.4; //0.5 proportional gain.  Bigger = faster response, but possiblly unstable
-float ki = 0.01; // integral gain. cleans up steady state error at end
-float kd = 0.5; // derivative gain, to damp out the oscillations
-int errorSum=0;
-int errorChange=0;
-int oldError=0;
-while (true) {
-if (active) { // control only if told to do it
-clearLCDLine(0); displayLCDString(0,0,"controlling");
-curPosition = nMotorEncoder(grabber); // where are we now
-int errorPos= curPosition-target; // current position errors
-errorSum += errorPos; // build up a sum of error, for integral gain
-errorChange = errorPos-oldError; // estimate rate of change of error
-oldError=errorPos; // save for next time thru
-// compute new control value
-int m = (int)(-kp * errorPos - ki*errorSum - kd*errorChange);
-if (m > 127) m = 127; // limit to max motor value
-if (m < -127) m = -127; // limit to min motor value
-clearLCDLine(1); displayLCDNumber(1,8,m);
-displayLCDNumber(1,0,curPosition);
-motor [grabber] = m ;// send control to motor
-sleep(10);
-}//if
-}//whiles
-}//end task niceClaw
-
-bool claw45 = false; // button press makes this true; tells doClaw45 to start
-task doClaw45 () {
-while (true) {
-if (claw45){ // if button was pressed
-clearLCDLine(0); displayLCDString(0,0,"doClaw45");
-target = -110; // encoder value for claws at 45 deg
-active = true; // tell niceClaw to control it
-curPosition = nMotorEncoder(grabber);
-int tick = 0;
-int error = curPosition-target;
-bool notThere = true;
-int countsThere = 0;
-bool timedOut=false;
-int sleepMS=10;
-while(notThere){
-// want to be in position for several counts
-if(abs(error)<10){
-countsThere++;
-}//if
-else {countsThere = 0;}
-if(countsThere>5){notThere = false;}//we've arrived for 50 milliseconds
-error = curPosition-target;
-tick ++;
-if (tick > (4*1000)/sleepMS){
-timedOut=true;
-break ; // timeout after 4 seconds
-}
-sleep(sleepMS);
-}//while
-
-clearLCDLine(0);
-if(timedOut) displayLCDString(0,0,"timeout");
-else displayLCDString(0,0,"arrived");
-active = false; // tell niceClaw to stop controlling
-claw45 = false;  // reset "button was pressed" indicator
-}//end if
-}//end while
-}//end task doClaw45
-*/
 //this function will not send back new numbers
-//bool isTipping=false;
 void joystick(){
 	displayLCDString(0,0,"start");
 
 	startTask(chassisSlow); // monitor slow speed buttons
-	startTask(liftCone); //grabs cone and lifts it up
-	//	startTask(niceClaw); //sets the the grabber to predetermined position so the jaws don't hit the wheel
-	//	startTask(doClaw45);//sets the grabber open to about 45 degrees using above task
-
 	//continue forever
 	while(true){
 		//displayLCDNumber(1,0,speedDriver);
@@ -318,7 +175,7 @@ void joystick(){
 		motor[topRight] = vexRT[Ch2Xmtr2]/speedGrabber;
 
 		//grabber motor
-		// up button=open, down button = close
+		// up button = open, down button = close
 		//button for grabber to close
 		if (vexRT[Btn6UXmtr2] && !vexRT[Btn6DXmtr2]) {
 			closeGrabber();
@@ -331,29 +188,13 @@ void joystick(){
 		if (!vexRT[Btn6DXmtr2] && !vexRT[Btn6UXmtr2]) {
 			relaxGrabber();
 		}
-
-		//if neither button is pressed, right grabber does nothing
-		//if (!claw45 && // not otherwise trying to control the claw
-		//	!(vexRT[Btn6UXmtr2] || vexRT[Btn6DXmtr2])) {
-		//	motor[grabber] = 0;
-		//};//end if
-		//if (vexRT[Btn8DXmtr2]){ // partner button 8 down = move claw to 45
-		//	clearLCDLine(0); displayLCDString(0,0,"btn 8D");
-		//	claw45 = true;
-		//};//end if
-		//if (vexRT[Btn6UXmtr2]) {
-		//	motor[grabber] = -127;}
-		//while(vexRT[Btn6DXmtr2] == 1 &&! vexRT[Btn6UXmtr2] == 1){
-		//motor[grabber] = 127/speedGrabber;
-		//}
 	}//exit while loop
 }//end taskMain
 
 void scoreLeftCone(bool switchAuton) {
-	//drive forward
-	driveForwards(50);
-	//drive lift down
-	fallLift();
+	////drive forward
+	//driveForwards(50);
+	fallLift(350); //drives lift down for 3.5 seconds
 	//turn left
 	if(switchAuton){
 		turnRight(70);
@@ -361,75 +202,60 @@ void scoreLeftCone(bool switchAuton) {
 		turnLeft(70);
 	}
 	//move forward
-	driveForwards(60);
+	driveForwards(60);//drives forward for 0.6 seconds
 	//grab cone
 	closeGrabber(); //grabCone();
 	//lift up all the way
-	riseLift();
+	riseLift(250);//dirves lift up for 2.5 seconds
 	//turn right
-		if(switchAuton) {
-		turnLeft(109,100);
+	if(switchAuton) {
+		turnLeft(100,100); //runs for 1 second @ a reduced speed
 		}else{
-		turnRight(109,100);
+		turnRight(100,100);//runs for 1 second @ a reduced speed
 	}
-
-
-	//left side forward
-//	motor[backLeft] =	100;
-//	motor[frontLeft] =	100;
-	//right side backward
-//	motor[backRight] =	-100;
-//	motor[frontRight] =	-100;
-	//time it takes for chassis to get to stationary goal
-//	wait10Msec(109);
-//	stopDriving();
-	//move forward
-	driveForwards(65);
+	driveForwards(65);//drives forward for 0.65 seconds
 	//drop down to stationary goal
-	fallLift();
+	fallLift(350);//drives lift down for 3.5 seconds
 	//release cone
-	openGrabber(); //releaseCone();
+	openGrabber(); //releases cone
 	//drive backwards
-	driveBackwards(100);
+	driveBackwards(100);//drives back for 1 second
 }
 void scorePresetCone(){
 	//scoring on stationary goals
 	//driving lift down
-	sendLiftDown();
-	wait10Msec(50);
+	fallLift(50);//runs for 0.5 seconds
 	//grab cone
 	closeGrabber(); //grabCone();
 	wait10Msec(35); //wait for claw to move
-	//driving lift down
-	//sendLiftDown();
-	//wait10Msec(125);
 	//lift up all the way
-	riseLift();
+	riseLift(250);//drives lift up for 2.5 seconds
 	//drive forwards
-	driveForwards(100);//10
+	driveForwards(100);//runs for 1 second
 	//drop down to stationary goal
-	fallLift();
+	fallLift(350);//drives lif down for 3.5 seconds
 	//release cone
 	openGrabber(); //releaseCone();
+	wait10Msec(25);//how long the open grabber runs
 	//drive backwards
 	driveBackwards(100);
 }
 
 void autonomous() {
-	//
+	//	displayLCDString(0,0,"a-mouse");
 
 	//while(true){
 
 	//switching autonomous
 	bool switchAuton = (SensorValue[dgtl9]==1); //when jumper is in digital port 9
 	// turn led on so you know you got the jumper in right
-	SensorValue[dgtl10]=SensorValue[dgtl9];
-
-
-
-	//driveForwards (75); //to drive out of the way of our alliances autonomous
-	//	displayLCDString(0,0,"a-mouse");
-	scorePresetCone();
-   wait10Msec(109);
-	scoreLeftCone(switchAuton);
-}
+	SensorValue[dgtl10]= SensorValue[dgtl9];
+	if (SensorValue[dgtl11] == 1) {
+		driveForwards (75); //to drive out of the way of our alliances autonomous
+	}
+	else  {
+		scorePresetCone();
+		wait10Msec(95);
+		scoreLeftCone(switchAuton);
+	}
+}//end autonomous
