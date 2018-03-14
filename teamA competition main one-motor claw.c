@@ -46,21 +46,37 @@ task chassisSlow(){
 		//displayLCDNumber(0,0,speedDriver);
 	}//while
 };
-
+//grabber motor
 //void closeGrabber(void){ motor[grabber] = 127/speedGrabber;}
 //void openGrabber(void){ motor[grabber] = -127/speedGrabber;}
 void closeGrabber(void){ motor[grabber] = -127;}
 void openGrabber(void){ motor[grabber] = 127;}
 void relaxGrabber(void){ motor[grabber] = 0;}
 
+task runGrabber () {
+	// up button = open, down button = close
+	//button for grabber to close
+	if (vexRT[Btn6UXmtr2] && !vexRT[Btn6DXmtr2]) {
+		closeGrabber();
+	};//end if
+	//button for grabber to open
+	if (vexRT[Btn6DXmtr2] && !vexRT[Btn6UXmtr2]) {
+		openGrabber();
+	};
+	// if you aren't pressing either button, then motor relaxes (power 0)
+	if (!vexRT[Btn6DXmtr2] && !vexRT[Btn6UXmtr2]) {
+		relaxGrabber();
+	}
+};
+
 //for autonomous
-void riseLift(int time){
+void riseLift(int time, int power){
 	//left side up
-	motor[bottomLeft] =	127;
-	motor[topLeft] =	127;
+	motor[bottomLeft] =	power;
+	motor[topLeft] =	power;
 	//right side up
-	motor[bottomRight] =	127;
-	motor[topRight] =	127;
+	motor[bottomRight] =	power;
+	motor[topRight] =	power;
 	//time it takes for lift to get to the top
 	wait10Msec(time);
 	//left side stop
@@ -79,7 +95,7 @@ void fallLift(int time){
 	motor[topRight] =	-127;
 	//time it takes for lift to fall to sationary goal
 	wait10Msec(time);
-		//left side stop
+	//left side stop
 	motor[bottomLeft] =	0;
 	motor[topLeft] =	0;
 	//right side stop
@@ -148,12 +164,13 @@ void joystick(){
 	displayLCDString(0,0,"start");
 
 	startTask(chassisSlow); // monitor slow speed buttons
+
 	//continue forever
 	while(true){
 		//displayLCDNumber(1,0,speedDriver);
 		//chassis motors
 		bool isTipping = (SensorValue[dgtl2]==0);
-		if (isTipping & ! vexRT[Btn6U]){
+		if (isTipping &! vexRT[Btn6U]){
 			// run back wheels backwards to prevent the robot from tipping
 			motor[backLeft] = -127;
 			motor[backRight] = -127;
@@ -173,78 +190,72 @@ void joystick(){
 		motor[bottomRight] = vexRT[Ch2Xmtr2]/speedGrabber;
 		motor[topLeft] = vexRT[Ch2Xmtr2]/speedGrabber;
 		motor[topRight] = vexRT[Ch2Xmtr2]/speedGrabber;
-
-		//grabber motor
-		// up button = open, down button = close
-		//button for grabber to close
-		if (vexRT[Btn6UXmtr2] && !vexRT[Btn6DXmtr2]) {
-			closeGrabber();
-		};//end if
-		//button for grabber to open
-		if (vexRT[Btn6DXmtr2] && !vexRT[Btn6UXmtr2]) {
-			openGrabber();
-		};
-		// if you aren't pressing either button, then motor relaxes (power 0)
-		if (!vexRT[Btn6DXmtr2] && !vexRT[Btn6UXmtr2]) {
-			relaxGrabber();
-		}
+		//grabber motors
+		startTask(runGrabber); //check for grabber buttons
 	}//exit while loop
 }//end taskMain
+
+void scorePresetCone(){
+	//scoring on stationary goals
+	//driving lift down
+	//fallLift(50);//runs for 0.5 seconds -removed because there is nothing in the way of the grabber any more
+	//grab cone
+	closeGrabber(); //grabCone();
+	wait10Msec(35); //wait for claw to move
+	//lift up all the way
+	riseLift(200, 127);//drives lift up for 2 seconds
+	//drive forwards
+	driveForwards(110);//runs for 1.1 second
+	//drop down to stationary goal
+	fallLift(250);//drives lift down for 2.5 seconds
+	//release cone
+	openGrabber(); //releaseCone();
+	wait10Msec(55);//how long the open grabber runs
+	//drive backwards
+	driveBackwards(55);
+}
 
 void scoreLeftCone(bool switchAuton) {
 	////drive forward
 	//driveForwards(50);
-	fallLift(350); //drives lift down for 3.5 seconds
+	fallLift(175); //drives lift down for 2.5  - fallLift is called at the end of ScorePresetCone()
 	//turn left
 	if(switchAuton){
-		turnRight(70);
-		}else{
-		turnLeft(70);
+		turnRight(55);//runs for 0.55 seconds
+	}
+	else{
+		turnLeft(55);//runs for 0.55 seconds
 	}
 	//move forward
 	driveForwards(60);//drives forward for 0.6 seconds
 	//grab cone
 	closeGrabber(); //grabCone();
-	//lift up all the way
-	riseLift(250);//dirves lift up for 2.5 seconds
+	wait10Msec(1000);//runs for 10 second for the claw to close
 	//turn right
+	//rise lift
+	riseLift(20, 127); //runs for 0.2 seconds to ensure that the cone if recieved
 	if(switchAuton) {
-		turnLeft(100,100); //runs for 1 second @ a reduced speed
-		}else{
-		turnRight(100,100);//runs for 1 second @ a reduced speed
+		turnLeft(78); //runs for 0.78 seconds
 	}
+	else{
+		turnRight(78);//runs for 0.78 seconds
+	}
+	wait10Msec(1);//pauses inbetween the two actions
+	//lift up all the way
+	riseLift(250, 127);//dirves lift up for 2.5 seconds at full motor power
+	//wait10Msec(1);//pauses for 10 milliseconds so they don't run together
 	driveForwards(65);//drives forward for 0.65 seconds
 	//drop down to stationary goal
-	fallLift(350);//drives lift down for 3.5 seconds
+	fallLift(250);//drives lift down for 2.5 seconds
 	//release cone
-	openGrabber(); //releases cone
+	openGrabber();
+	wait10Msec(50);//runs for 0.5 seconds so claw can open
 	//drive backwards
 	driveBackwards(100);//drives back for 1 second
-}
-void scorePresetCone(){
-	//scoring on stationary goals
-	//driving lift down
-	fallLift(50);//runs for 0.5 seconds
-	//grab cone
-	closeGrabber(); //grabCone();
-	wait10Msec(35); //wait for claw to move
-	//lift up all the way
-	riseLift(250);//drives lift up for 2.5 seconds
-	//drive forwards
-	driveForwards(100);//runs for 1 second
-	//drop down to stationary goal
-	fallLift(350);//drives lif down for 3.5 seconds
-	//release cone
-	openGrabber(); //releaseCone();
-	wait10Msec(25);//how long the open grabber runs
-	//drive backwards
-	driveBackwards(100);
 }
 
 void autonomous() {
 	//	displayLCDString(0,0,"a-mouse");
-
-	//while(true){
 
 	//switching autonomous
 	bool switchAuton = (SensorValue[dgtl9]==1); //when jumper is in digital port 9
@@ -255,7 +266,7 @@ void autonomous() {
 	}
 	else  {
 		scorePresetCone();
-		wait10Msec(95);
+		wait10Msec(10);
 		scoreLeftCone(switchAuton);
 	}
 }//end autonomous
