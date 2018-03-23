@@ -144,29 +144,39 @@ void stopDriving(void){
 	motor[frontRight] =	0;
 }
 //integrated motor encoder
-	const float wheelDiaInches=4;
-	const float ticksPerRevolution=627.2;
-	const float pi=3.1415926535;
-	const float circumference=pi*wheelDiaInches;
+const float wheelDiaInches=4;
+const float ticksPerRevolution=627.2;
+const float pi=3.1415926535;
+const float circumference=pi*wheelDiaInches;
 
 void driveForwDistance(int distInches) {
 	resetMotorEncoder(backRight);
-	startForwards();
+	//writeDebugStream("enocoder reset to: %d\n", getMotorEncoder(backRight));
 	const float wheelTurns=distInches/circumference;
 	float distanceTicks= ticksPerRevolution*wheelTurns;
-	while(getMotorEncoder(backRight) < (int)distanceTicks)
-	{}; //waits for the right Rear to run for x amount of rotations on the chassis
+	startForwards();
+	//writeDebugStream("distanceTicks: %d\n", (int) distanceTicks);
+	while(getMotorEncoder(backRight)*(-1) <= (int)distanceTicks)
+	{ wait1Msec(5);
+		//writeDebugStream("encoder: %d\n", getMotorEncoder(backRight));
+	}; //waits for the right Rear to run for x amount of rotations on the chassis
 	stopDriving();
+
 }
+
 void driveBackDistance(int distInches) {
 	resetMotorEncoder(backRight);
+	writeDebugStream("[driveBackDistance] enocoder reset to: %d\n", getMotorEncoder(backRight));
 	startBackwards();
 	const float wheelTurns=distInches/circumference;
 	float distanceTicks= ticksPerRevolution*wheelTurns;
-	while(getMotorEncoder(backRight) > (int)distanceTicks)
-	{}; //waits for the right Rear to run for x amount of rotations on the chassis
+	writeDebugStream("[driveBackDistance] distanceTicks backwards: %d\n", (int) distanceTicks);
+	while(getMotorEncoder(backRight) <= (int)distanceTicks){
+		writeDebugStream("[driveBackDistance] encoder back:%d\n", getMotorEncoder(backRight));
+	}; //waits for the right Rear to run for x amount of rotations on the chassis
 	stopDriving();
 }
+
 void driveForwards(int time) {
 	startForwards();
 	//time it takes for chassis to get to stationary goal
@@ -259,9 +269,9 @@ rightRed.turnDir=false;
 }
 
 AutonomousParameterType runParams=leftRed;
-runParams=rightRed;
+runParams = rightRed;
 // inside your code, you then use
-wait10Mec( runParams.waitStart );
+wait10Msec( runParams.waitStart );
 */
 
 void scorePresetCone(){
@@ -275,7 +285,7 @@ void scorePresetCone(){
 	riseLift(200, 127);//drives lift up for 2 seconds
 	//drive forwards
 	//driveForwards(105);//runs for 1.05 second
-	driveForwDistance(36);
+	driveForwDistance(20);
 	//drop down to stationary goal
 	fallLift(125);//drives lift down for 1.25 seconds
 	//release cone
@@ -284,23 +294,23 @@ void scorePresetCone(){
 	relaxGrabber();
 	//drive backwards
 	//driveBackwards(55);
-	driveBackDistance(36);
+	driveBackDistance(10);
 }
 
 void scoreLeftCone(bool switchAuton) {
-	////drive forward
-	//driveForwards(50);
+	//drive forward
+	//driveForwards(50);  //completely unecessary
 	fallLift(175); //drives lift down for 2.5  - fallLift is called at the end of ScorePresetCone()
 	//turn left
 	if(switchAuton){
-		turnRight(55);//runs for 0.55 seconds
+		turnRight(50);//runs for 0.5 seconds
 	}
 	else{
-		turnLeft(55);//runs for 0.55 seconds
+		turnLeft(50);//runs for 0.5 seconds
 	}
 	//move forward
 	//driveForwards(60);//drives forward for 0.6 seconds
-	driveForwDistance(12);
+	driveForwDistance(10);
 	//grab cone
 	closeGrabber(); //grabCone();
 	wait10Msec(35);//runs for 10 second for the claw to close
@@ -318,7 +328,7 @@ void scoreLeftCone(bool switchAuton) {
 	riseLift(250, 127);//dirves lift up for 2.5 seconds at full motor power
 	//wait10Msec(1);//pauses for 10 milliseconds so they don't run together
 	//driveForwards(63);//drives forward for 0.63 seconds
-	driveForwDistance(24);
+	driveForwDistance(8);
 	//drop down to stationary goal
 	fallLift(125);//drives lift down for 1.25 seconds
 	//release cone
@@ -327,25 +337,26 @@ void scoreLeftCone(bool switchAuton) {
 	relaxGrabber();
 	//drive backwards
 	//driveBackwards(100);//drives back for 1 second
-	driveBackDistance(24);
+	driveBackDistance(10);
 }
 
 void autonomous() {
 	//	displayLCDString(0,0,"a-mouse");
+	//driveForwDistance(12);
 
 	//switching autonomous
 	bool switchAuton = (SensorValue[dgtl9]==1); //when jumper is in digital port 9
 	// turn led on so you know you got the jumper in right
 	SensorValue[dgtl10]= SensorValue[dgtl9];
 	if (SensorValue[dgtl11] == 1) {
-		//to drive out of the way of our alliances autonomous
+	//to drive out of the way of our alliances autonomous
 	//driveForwards (75);
-driveForwDistance(12);
+	driveForwDistance(12);
 
 	}
 	else  {
-		scorePresetCone();
-		wait10Msec(1);
-		scoreLeftCone(switchAuton);
+	scorePresetCone();
+	wait10Msec(1);
+	scoreLeftCone(switchAuton);
 	}
 }//end autonomous
