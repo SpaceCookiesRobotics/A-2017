@@ -248,6 +248,149 @@ void joystick(){
 	}//exit while loop
 }//end taskMain
 
+void scorePresetCone(){
+	//scoring on stationary goals
+	//driving lift down
+	//fallLift(50);//runs for 0.5 seconds -removed because there is nothing in the way of the grabber any more
+	//grab cone
+	closeGrabber(); //grabCone();
+	wait10Msec(35); //wait for claw to move
+	//lift up all the way
+	riseLift(200, 127);//drives lift up for 2 seconds
+	//drive forwards
+	//driveForwards(105);//runs for 1.05 second
+	driveForwDistance(20);
+	//drop down to stationary goal
+	fallLift(125);//drives lift down for 1.25 seconds
+	//release cone
+	openGrabber(); //releaseCone();
+	wait10Msec(60);//runs for 0.6 seconds so claw can open
+	relaxGrabber();
+	//drive backwards
+	//driveBackwards(55);
+	driveBackDistance(10);
+}
+
+void scoreLeftCone(bool shouldTurnLeft, bool goLong) {
+	//drive forward
+	//driveForwards(50);  //completely unecessary
+	fallLift(175); //drives lift down for 2.5  - fallLift is called at the end of ScorePresetCone()
+	//turn left
+	if(shouldTurnLeft){
+		turnRight(50);//runs for 0.5 seconds
+	}
+	else{
+		turnLeft(50);//runs for 0.5 seconds
+	}
+	//move forward
+	if (goLong){
+		driveForwDistance(12);
+	}
+	else {
+		//driveForwards(60);//drives forward for 0.6 seconds
+		driveForwDistance(10);
+	}
+	//grab cone
+	closeGrabber(); //grabCone();
+	wait10Msec(35);//runs for 10 second for the claw to close
+	//turn right
+	//rise lift
+	riseLift(20, 127); //runs for 0.2 seconds to ensure that the cone if recieved
+	if(shouldTurnLeft &! goLong) {
+		turnLeft(70); //runs for 0.7 seconds
+		wait10Msec(1);
+		riseLift(250, 127);
+		driveForwDistance(8);
+	}
+	if(shouldTurnLeft && goLong) {
+		turnLeft(75); //runs for 0.7 seconds
+		wait10Msec(1);
+		riseLift(250, 127);
+		driveForwDistance(10);
+	}
+	if(goLong &! shouldTurnLeft) {
+		turnRight(75);//runs for 0.7 seconds
+		wait10Msec(1);
+		riseLift(250, 127);
+		driveForwDistance(10);
+	}
+	if (!shouldTurnLeft && !goLong){
+		turnRight(70);//runs for 0.7 seconds
+		wait10Msec(1);
+		riseLift(250, 127);
+		driveForwDistance(8);
+	}
+	//wait10Msec(1);//pauses inbetween the two actions
+	//lift up all the way
+	//riseLift(250, 127);//dirves lift up for 2.5 seconds at full motor power
+	//wait10Msec(1);//pauses for 10 milliseconds so they don't run together
+	//drive forwards
+	//if(goLong) {
+	//	driveForwDistance(10);
+	//}
+	//	else{
+	//		//driveForwards(63);//drives forward for 0.63 seconds
+	//		driveForwDistance(8);
+	//	}
+	//drop down to stationary goal
+	fallLift(125);//drives lift down for 1.25 seconds
+	//release cone
+	openGrabber();
+	wait10Msec(55);//runs for 0.55 seconds so claw can open
+	relaxGrabber();
+	//drive backwards
+	//driveBackwards(100);//drives back for 1 second
+	driveBackDistance(10);
+}
+
+/*
+How to set it up so you can pick from one of the four autonomous types:
+Use the jumpers to select red or blue, and long or short.
+Call configureAutonomous() and it will use isRed and goLong to
+determine the turning direction, setting shouldTurnLeft.
+Use shouldTurnLeft where you use switchAuton.
+*/
+
+bool shouldTurnLeft=false;  // move this high in this file, above your code
+
+bool goLong=false;// use a jumper to set this; move this high in the file, too
+bool isRed=false; // use a different jumper to set this, too.
+/*
+void configureAutonomous(void){
+if(isRed){
+shouldTurnLeft = goLong; // if going long in red, turn left
+}
+else { // is blue
+shouldTurnLeft = !goLong; // if blue, turn left only if going short (not going long)
+}
+}// configureAutonomous
+*/
+void autonomous() {
+	//	displayLCDString(0,0,"a-mouse");
+	//driveForwDistance(12);
+
+	//switching autonomous
+	bool isRed = (SensorValue[dgtl9] == 1); //when jumper is in digital port 9, robot will run code for red
+	// turn led on so you know you got the jumper in right
+	SensorValue[dgtl10] = SensorValue[dgtl9];
+	bool goLong = (SensorValue[dgtl11] == 1);
+	SensorValue[dgtl12] = SensorValue[dgtl3];
+	bool shouldTurnLeft = (SensorValue[dgtl1] == 1);
+
+	//configureAutonomous();
+	if (SensorValue[dgtl4] == 1) {
+		//to drive out of the way of our alliances autonomous
+		//driveForwards (75);
+		driveForwDistance(12);
+
+	}
+	//else  {
+	//	scorePresetCone();
+	//	wait10Msec(1);
+	//	scoreLeftCone(shouldTurnLeft, goLong);
+	//}
+}//end autonomous
+
 /*
 //How to do structs in Robot C
 typedef struct  {
@@ -273,90 +416,3 @@ runParams = rightRed;
 // inside your code, you then use
 wait10Msec( runParams.waitStart );
 */
-
-void scorePresetCone(){
-	//scoring on stationary goals
-	//driving lift down
-	//fallLift(50);//runs for 0.5 seconds -removed because there is nothing in the way of the grabber any more
-	//grab cone
-	closeGrabber(); //grabCone();
-	wait10Msec(35); //wait for claw to move
-	//lift up all the way
-	riseLift(200, 127);//drives lift up for 2 seconds
-	//drive forwards
-	//driveForwards(105);//runs for 1.05 second
-	driveForwDistance(20);
-	//drop down to stationary goal
-	fallLift(125);//drives lift down for 1.25 seconds
-	//release cone
-	openGrabber(); //releaseCone();
-	wait10Msec(60);//runs for 0.6 seconds so claw can open
-	relaxGrabber();
-	//drive backwards
-	//driveBackwards(55);
-	driveBackDistance(10);
-}
-
-void scoreLeftCone(bool switchAuton) {
-	//drive forward
-	//driveForwards(50);  //completely unecessary
-	fallLift(175); //drives lift down for 2.5  - fallLift is called at the end of ScorePresetCone()
-	//turn left
-	if(switchAuton){
-		turnRight(50);//runs for 0.5 seconds
-	}
-	else{
-		turnLeft(50);//runs for 0.5 seconds
-	}
-	//move forward
-	//driveForwards(60);//drives forward for 0.6 seconds
-	driveForwDistance(10);
-	//grab cone
-	closeGrabber(); //grabCone();
-	wait10Msec(35);//runs for 10 second for the claw to close
-	//turn right
-	//rise lift
-	riseLift(20, 127); //runs for 0.2 seconds to ensure that the cone if recieved
-	if(switchAuton) {
-		turnLeft(70); //runs for 0.7 seconds
-	}
-	else{
-		turnRight(70);//runs for 0.7 seconds
-	}
-	wait10Msec(1);//pauses inbetween the two actions
-	//lift up all the way
-	riseLift(250, 127);//dirves lift up for 2.5 seconds at full motor power
-	//wait10Msec(1);//pauses for 10 milliseconds so they don't run together
-	//driveForwards(63);//drives forward for 0.63 seconds
-	driveForwDistance(8);
-	//drop down to stationary goal
-	fallLift(125);//drives lift down for 1.25 seconds
-	//release cone
-	openGrabber();
-	wait10Msec(60);//runs for 0.60 seconds so claw can open
-	relaxGrabber();
-	//drive backwards
-	//driveBackwards(100);//drives back for 1 second
-	driveBackDistance(10);
-}
-
-void autonomous() {
-	//	displayLCDString(0,0,"a-mouse");
-	//driveForwDistance(12);
-
-	//switching autonomous
-	bool switchAuton = (SensorValue[dgtl9]==1); //when jumper is in digital port 9
-	// turn led on so you know you got the jumper in right
-	SensorValue[dgtl10]= SensorValue[dgtl9];
-	if (SensorValue[dgtl11] == 1) {
-	//to drive out of the way of our alliances autonomous
-	//driveForwards (75);
-	driveForwDistance(12);
-
-	}
-	else  {
-	scorePresetCone();
-	wait10Msec(1);
-	scoreLeftCone(switchAuton);
-	}
-}//end autonomous
