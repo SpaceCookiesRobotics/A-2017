@@ -303,10 +303,10 @@ void scoreLeftCone(bool switchAuton) {
 	fallLift(175); //drives lift down for 2.5  - fallLift is called at the end of ScorePresetCone()
 	//turn left
 	if(switchAuton){
-		turnRight(50);//runs for 0.5 seconds
+		turnRight(45);//runs for 0.5 seconds
 	}
 	else{
-		turnLeft(50);//runs for 0.5 seconds
+		turnLeft(45);//runs for 0.5 seconds
 	}
 	//move forward
 	//driveForwards(60);//drives forward for 0.6 seconds
@@ -318,10 +318,10 @@ void scoreLeftCone(bool switchAuton) {
 	//rise lift
 	riseLift(20, 127); //runs for 0.2 seconds to ensure that the cone if recieved
 	if(switchAuton) {
-		turnLeft(70); //runs for 0.7 seconds
+		turnLeft(60); //runs for 0.7 seconds
 	}
 	else{
-		turnRight(70);//runs for 0.7 seconds
+		turnRight(60);//runs for 0.7 seconds
 	}
 	wait10Msec(1);//pauses inbetween the two actions
 	//lift up all the way
@@ -330,7 +330,7 @@ void scoreLeftCone(bool switchAuton) {
 	//driveForwards(63);//drives forward for 0.63 seconds
 	driveForwDistance(8);
 	//drop down to stationary goal
-	fallLift(125);//drives lift down for 1.25 seconds
+	fallLift(130);//drives lift down for 1.25 seconds
 	//release cone
 	openGrabber();
 	wait10Msec(60);//runs for 0.60 seconds so claw can open
@@ -349,14 +349,15 @@ void autonomous() {
 	// turn led on so you know you got the jumper in right
 	SensorValue[dgtl10]= SensorValue[dgtl9];
 	if (SensorValue[dgtl11] == 1) {
-	//to drive out of the way of our alliances autonomous
-	//driveForwards (75);
-	driveForwDistance(12);
+		//to drive out of the way of our alliances autonomous
+		//driveForwards (75);
+		driveForwDistance(12);
 
 	}
 	else  {
-	scorePresetCone();
-	wait10Msec(1);
-	scoreLeftCone(switchAuton);
+		wait10Msec(550);//waits for partner to score
+		scorePresetCone();
+		wait10Msec(1);
+		scoreLeftCone(switchAuton);
 	}
 }//end autonomous
