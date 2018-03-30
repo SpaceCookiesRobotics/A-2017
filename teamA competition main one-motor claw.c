@@ -1,9 +1,11 @@
 #pragma config(I2C_Usage, I2C1, i2cSensors)
 #pragma config(Sensor, dgtl2,  tip,            sensorTouch)
+#pragma config(Sensor, dgtl3,  jumper,         sensorDigitalIn)
+#pragma config(Sensor, dgtl7,  jumper,         sensorDigitalIn)
 #pragma config(Sensor, dgtl9,  jumper,         sensorDigitalIn)
 #pragma config(Sensor, dgtl10, led,            sensorDigitalOut)
 #pragma config(Sensor, dgtl11, ,               sensorDigitalOut)
-#pragma config(Sensor, dgtl12, ,               sensorDigitalOut)
+#pragma config(Sensor, dgtl12, led,            sensorDigitalOut)
 #pragma config(Sensor, I2C_1,  rightRear,      sensorQuadEncoderOnI2CPort,    , AutoAssign )
 #pragma config(Motor,  port1,           frontLeft,     tmotorVex393_HBridge, openLoop, reversed)
 #pragma config(Motor,  port2,           bottomLeft,    tmotorVex393_MC29, openLoop, reversed)
@@ -190,23 +192,23 @@ void driveBackwards (int time){
 	stopDriving();
 }
 void turnLeft (int time, int speed=127){
-	//left side backward
-	motor[backLeft] =	-speed;
-	motor[frontLeft] =	-speed;
-	//right side forward
-	motor[backRight] =	speed;
-	motor[frontRight] =	speed;
-	//time it takes for chassis to get to stationary goal
-	wait10Msec(time);
-	stopDriving();
-}
-void turnRight (int time, int speed=127){
 	//left side forward
 	motor[backLeft] =	speed;
 	motor[frontLeft] =	speed;
 	//right side backward
 	motor[backRight] =	-speed;
 	motor[frontRight] =	-speed;
+	//time it takes for chassis to get to stationary goal
+	wait10Msec(time);
+	stopDriving();
+}
+void turnRight (int time, int speed=127){
+	//left side backward
+	motor[backLeft] =	-speed;
+	motor[frontLeft] =	-speed;
+	//right side forward
+	motor[backRight] =	speed;
+	motor[frontRight] =	speed;
 	//time it takes for chassis to get to stationary goal
 	wait10Msec(time);
 	stopDriving();
@@ -297,38 +299,78 @@ void scorePresetCone(){
 	driveBackDistance(10);
 }
 
-void scoreLeftCone(bool switchAuton) {
+void scoreLeftCone(bool redAuton, bool leftAuton) {
 	//drive forward
 	//driveForwards(50);  //completely unecessary
-	fallLift(175); //drives lift down for 2.5  - fallLift is called at the end of ScorePresetCone()
+	fallLift(175); //drives lift down for 2.5
 	//turn left
-	if(switchAuton){
-		turnRight(45);//runs for 0.5 seconds
+
+	if(redAuton && !leftAuton){//when on red, turning right (more cones)
+		turnRight(45);//runs for 0.45 seconds
+		//driveForwards(60);//drives forward for 0.6 seconds
+		driveForwDistance(10);
 	}
-	else{
-		turnLeft(45);//runs for 0.5 seconds
+	if(!redAuton && leftAuton) {//when on blue, turning left (more cones)
+		turnLeft(45);//runs for 0.45 seconds
+		//driveForwards(60);//drives forward for 0.6 seconds
+		driveForwDistance(10);
+	}
+	if(redAuton && leftAuton) {//when on red, turning left (side with loader, less cones)
+		turnLeft(50);//runs for 0.5 seconds - needs to turn for longer to point to the correct cone
+		//driveForwards(60);//drives forward for 0.6 seconds
+		driveForwDistance(12);
+	}
+	if(!redAuton && !leftAuton) {//when on blue, turning right (side with loader, less cones)
+		turnRight(50);//runs for 0.5 seconds - needs to turn for longer to point to the correct cone
+		//driveForwards(60);//drives forward for 0.6 seconds
+		driveForwDistance(12);
 	}
 	//move forward
-	//driveForwards(60);//drives forward for 0.6 seconds
-	driveForwDistance(10);
+
 	//grab cone
 	closeGrabber(); //grabCone();
 	wait10Msec(35);//runs for 10 second for the claw to close
-	//turn right
 	//rise lift
 	riseLift(20, 127); //runs for 0.2 seconds to ensure that the cone if recieved
-	if(switchAuton) {
-		turnLeft(60); //runs for 0.7 seconds
+	//turn right
+
+	if(redAuton && !leftAuton){//when on red, turning right (more cones)
+		turnLeft(60); //runs for 0.6 seconds
+		wait10Msec(1);//pauses inbetween the two actions
+		//lift up all the way
+		riseLift(250, 127);//dirves lift up for 2.5 seconds at full motor power
+		//wait10Msec(1);//pauses for 10 milliseconds so they don't run together
+		//driveForwards(63);//drives forward for 0.63 seconds
+		driveForwDistance(8);//drives to stationary goal
 	}
-	else{
-		turnRight(60);//runs for 0.7 seconds
+	if(!redAuton && leftAuton) {//when on blue, turning left (more cones)
+		turnRight(60);//runs for 0.6 seconds
+		wait10Msec(1);//pauses inbetween the two actions
+		//lift up all the way
+		riseLift(250, 127);//dirves lift up for 2.5 seconds at full motor power
+		//wait10Msec(1);//pauses for 10 milliseconds so they don't run together
+		//driveForwards(63);//drives forward for 0.63 seconds
+		driveForwDistance(8);//drives to stationary goal
 	}
-	wait10Msec(1);//pauses inbetween the two actions
-	//lift up all the way
-	riseLift(250, 127);//dirves lift up for 2.5 seconds at full motor power
-	//wait10Msec(1);//pauses for 10 milliseconds so they don't run together
-	//driveForwards(63);//drives forward for 0.63 seconds
-	driveForwDistance(8);
+	if(redAuton && leftAuton) {//when on red, turning left (side with loader, less cones)
+		turnRight(60); //runs for 0.6 seconds
+		wait10Msec(1);//pauses inbetween the two actions
+		//lift up all the way
+		riseLift(250, 127);//dirves lift up for 2.5 seconds at full motor power
+		//wait10Msec(1);//pauses for 10 milliseconds so they don't run together
+		//driveForwards(63);//drives forward for 0.63 seconds
+		driveForwDistance(10);//drives to stationary goal - runs for longer from where the cone was
+	}
+	if(!redAuton && !leftAuton) {//when on blue, turning right (side with loader, less cones)
+		turnLeft(60);//runs for 0.6 seconds
+		wait10Msec(1);//pauses inbetween the two actions
+		//lift up all the way
+		riseLift(250, 127);//dirves lift up for 2.5 seconds at full motor power
+		//wait10Msec(1);//pauses for 10 milliseconds so they don't run together
+		//driveForwards(63);//drives forward for 0.63 seconds
+		driveForwDistance(10);//drives to stationary goal - runs for longer from where the cone was
+		}
+
 	//drop down to stationary goal
 	fallLift(130);//drives lift down for 1.25 seconds
 	//release cone
@@ -340,24 +382,69 @@ void scoreLeftCone(bool switchAuton) {
 	driveBackDistance(10);
 }
 
+/* void scoreFarLeftCone(bool switchFarAuton) {
+	fallLift(175); //drives lift down for 2.5
+	//turn left
+	if(switchFarAuton){
+		turnRight(50);//runs for 0.5 seconds
+	}
+	else{
+		turnLeft(50);//runs for 0.5 seconds
+	}
+	//move forward
+	driveForwDistance(12);
+	//grab cone
+	closeGrabber(); //grabCone();
+	wait10Msec(35);//runs for 10 second for the claw to close
+	//rise lift
+	riseLift(20, 127); //runs for 0.2 seconds to ensure that the cone if recieved
+	//turn right
+	if(switchFarAuton) {
+		turnLeft(70); //runs for 0.7 seconds
+	}
+	else{
+		turnRight(70);//runs for 0.7 seconds
+	}
+	wait10Msec(1);//pauses inbetween the two actions
+	//lift up all the way
+	riseLift(250, 127);//dirves lift up for 2.5 seconds at full motor power
+	//wait10Msec(1);//pauses for 10 milliseconds so they don't run together
+	driveForwDistance(10);
+	//drop down to stationary goal
+	fallLift(130);//drives lift down for 1.25 seconds
+	//release cone
+	openGrabber();
+	wait10Msec(60);//runs for 0.60 seconds so claw can open
+	relaxGrabber();
+	//drive backwards
+	driveBackDistance(10);
+}
+*/
 void autonomous() {
 	//	displayLCDString(0,0,"a-mouse");
 	//driveForwDistance(12);
 
 	//switching autonomous
-	bool switchAuton = (SensorValue[dgtl9]==1); //when jumper is in digital port 9
+	bool leftAuton = (SensorValue[dgtl9] == 1); //when jumper is in digital port 9
 	// turn led on so you know you got the jumper in right
 	SensorValue[dgtl10]= SensorValue[dgtl9];
+	bool redAuton = (SensorValue[dgtl7] == 1);
+	SensorValue[dgtl12]= SensorValue[dgtl7];
 	if (SensorValue[dgtl11] == 1) {
 		//to drive out of the way of our alliances autonomous
 		//driveForwards (75);
 		driveForwDistance(12);
 
 	}
+	//if (SensorValue[dgtl7] == 1) {
+	//	scorePresetCone();
+	//	wait10Msec(1);
+	//	scoreFarLeftCone(switchFarAuton);
+	//}
 	else  {
-		wait10Msec(550);//waits for partner to score
+		//wait10Msec(550);//waits for partner to score
 		scorePresetCone();
 		wait10Msec(1);
-		scoreLeftCone(switchAuton);
+		scoreLeftCone(leftAuton,redAuton);
 	}
 }//end autonomous
