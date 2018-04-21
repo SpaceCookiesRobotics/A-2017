@@ -392,13 +392,15 @@ void scoreLeftConeRed (){//when on red, turning left (side with loader, less con
 
 void autonomous() {
 	//switching autonomous
-	if (SensorValue[dgtl1] == 1) {
+		/*
+if (SensorValue[dgtl1] == 1) {
 		//to drive out of the way of our alliances autonomous
 		driveForwDistance(12);
 	}
-	else if (SensorValue[dgtl3] == 1){//to just score the preload cone
+	*/
+	//if (SensorValue[dgtl3] == 1){//to just score the preload cone
 		scorePresetCone();
-	}
+	///}
 	/*
 	else if () {//when turning left on the blue alliance, without scoring the preload cone
 	scoreLeftConeBlue();
@@ -413,24 +415,26 @@ void autonomous() {
 	scoreLeftConeRed();
 	}
 	*/
-	else if (SensorValue[dgtl9] == 1) {//when turning left on the blue alliance, use jumper 9
+	/*
+	if (SensorValue[dgtl9] == 1) {//when turning left on the blue alliance, use jumper 9
 		scorePresetCone();
 		wait10Msec(1);
 		scoreLeftConeBlue();
 	}
-	else if (SensorValue[dgtl5] == 1) {//when turning right on the blue alliance, use jumper 5
+	if (SensorValue[dgtl5] == 1) {//when turning right on the blue alliance, use jumper 5
 		scorePresetCone();
 		wait10Msec(1);
 		scoreRightConeBlue();
 	}
-	else if (SensorValue[dgtl11] == 1) {//when turning right on the red alliance, use jumper 11
+	if (SensorValue[dgtl11] == 1) {//when turning right on the red alliance, use jumper 11
 		scorePresetCone();
 		wait10Msec(1);
 		scoreRightConeRed();
 	}
-	else if (SensorValue[dgtl7] == 1) {//when turning left on the red alliance, use jumper 7
+	if (SensorValue[dgtl7] == 1) {//when turning left on the red alliance, use jumper 7
 		scorePresetCone();
 		wait10Msec(1);
 		scoreLeftConeRed();
 	}
+	*/
 }//end autonomous
